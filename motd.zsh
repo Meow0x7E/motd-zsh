@@ -1,5 +1,6 @@
 #!/usr/bin/env zsh
 
+typeset -r Version="0.3.2"
 typeset -A Log=()
 typeset -A MOTD=()
 
@@ -34,7 +35,7 @@ MOTD[hitokoto,enable]=${MOTD[hitokoto,enable]:-1}
 
 # 慢扫描打印时的延迟，如果值为0则关闭慢扫描打印
 # Delay during slow scan printing, if the value is 0 then slow scan printing is turned off
-MOTD[banner,delay]=${MOTD[banner,delay]:-16ms}
+MOTD[banner,delay]=${MOTD[banner,delay]:-0}
 MOTD[fetch,delay]=${MOTD[fetch,delay]:-16ms}
 MOTD[hitokoto,delay]=${MOTD[hitokoto,delay]:-20ms}
 
@@ -67,14 +68,14 @@ if [[ $MOTD[git,proxy,enable] > 0 ]] {
 MOTD[hitokoto,git,path]="${MOTD[cache]}/sentences-bundle"
 
 function slow-scan-print() {
-    if [[ $1 == 0 ]] {
-        0>&1
+    if [[ "$1" == '0' ]] {
+        >&1
     } elif [[ -x ${HOME}/.cargo/bin/slow-scan-print ]] {
         ${HOME}/.cargo/bin/slow-scan-print -c -t $1 $2
     } elif [[ -x /usr/bin/slow-scan-print ]] {
         /usr/bin/slow-scan-print -c -t $1 $2
     } else {
-        0>&1
+        >&1
     }
 }
 
@@ -84,7 +85,7 @@ function lolcat() {
     } elif [[ -x /usr/bin/lolcat ]] {
         /usr/bin/lolcat -F
     } else {
-        0>&1
+        >&1
     }
 }
 
@@ -98,8 +99,7 @@ function get_os() {
     typeset log_header="[Banner][GetOS]"
     log n '尝试获取...'
 
-    if {hostnamectl | sed -n -e 's/Operating System: //p' \
-        || uname -o} {
+    if {hostnamectl | sed -n -e 's/Operating System: //p' || uname -o} {
         log n "成功。"
     } else {
         log f '失败！'
@@ -122,6 +122,7 @@ function banner() {
             # 它看起来是对的，所以它是对的
             print -l -n ${(f)"$(figlet -f "/usr/share/figlet/fonts/ANSI_Shadow_Meow0x7E_editor.flf" ${os[$i]})"}
         }
+        print
     } else {
         log e "无法进行打印，os 变量为空。"
     }
@@ -183,17 +184,20 @@ function hitokoto() {
 while {getopts hvdgu arg} {
     case $arg {
         (h)
-            print -u 2 "motd\nversion 0.3.1"
+            print -u 2 "\
+使用: motd [<选项>]
+
+选项:"
             print -u 2 -a -C 2 \
-                '\-h' '打印帮助到错误流' \
-                '\-v' '打印版本到错误流' \
-                '\-d' '打印调试信息到错误流' \
-                '\-g' '生成配置文件到~/.config/motd.conf'
-                '\-u' '更新hitokoto语句库'
+                "     \-h" "打印帮助到错误流" \
+                "     \-v" "打印版本到错误流" \
+                "     \-d" "打印调试信息到错误流" \
+                "     \-g" "生成配置文件到 ~/.config/motd.conf" \
+                "     \-u" "更新hitokoto语句库"
             exit
         ;;
         (v)
-            print -u 2 "motd\nversion 0.3.0"
+            print -u 2 "motd - v${Version}"
             exit
         ;;
         (d)
